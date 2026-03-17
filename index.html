@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brand Profile Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f7f7f5;
+      --bg-tertiary: #f0efe9;
+      --text: #1a1a18;
+      --text-secondary: #6b6b67;
+      --text-hint: #a0a09b;
+      --border: rgba(0,0,0,0.1);
+      --border-hover: rgba(0,0,0,0.22);
+      --border-strong: rgba(0,0,0,0.32);
+      --accent: #1a1a18;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --bg-secondary: #252522;
+        --bg-tertiary: #2e2e2b;
+        --text: #f0efe9;
+        --text-secondary: #a0a09b;
+        --text-hint: #6b6b67;
+        --border: rgba(255,255,255,0.1);
+        --border-hover: rgba(255,255,255,0.22);
+        --border-strong: rgba(255,255,255,0.32);
+        --accent: #f0efe9;
+      }
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-tertiary);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1rem 4rem;
+    }
+
+    #app { width: 100%; max-width: 580px; }
+
+    .header { text-align: center; margin-bottom: 2.5rem; }
+
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .header p { font-size: 15px; color: var(--text-secondary); font-weight: 300; }
+
+    .step-bar { display: flex; gap: 6px; margin-bottom: 2rem; justify-content: center; }
+
+    .step-dot {
+      width: 32px; height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+
+    .step-dot.active { background: var(--text); }
+    .step-dot.done   { background: var(--text-secondary); }
+
+    .question-block {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .question-block label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+    }
+
+    .question-block textarea,
+    .question-block input[type="text"] {
+      width: 100%;
+      background: var(--bg-secondary);
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 13px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      color: var(--text);
+      resize: none;
+      transition: border-color 0.2s;
+      line-height: 1.55;
+    }
+
+    .question-block textarea:focus,
+    .question-block input[type="text"]:focus { outline: none; border-color: var(--border-strong); }
+
+    .question-block textarea::placeholder,
+    .question-block input[type="text"]::placeholder { color: var(--text-hint); }
+
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .chip {
+      padding: 7px 16px;
+      border-radius: 100px;
+      border: 0.5px solid var(--border-hover);
+      background: transparent;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif;
+      user-select: none;
+    }
+
+    .chip:hover { border-color: var(--border-strong); color: var(--text); }
+    .chip.selected { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+    .btn-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1.5rem;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 11px 24px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 0.5px solid var(--border-hover);
+    }
+
+    .btn-secondary { background: transparent; color: var(--text-secondary); }
+    .btn-secondary:hover { background: var(--bg-secondary); color: var(--text); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+      padding: 11px 30px;
+    }
+
+    .btn-primary:hover { opacity: 0.82; }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .generating { text-align: center; padding: 4rem 1rem; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 2px solid var(--border);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      margin: 0 auto 1.25rem;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .result-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem 2rem 1.75rem;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 6px;
+    }
+
+    .result-tagline {
+      font-size: 15px;
+      color: var(--text-secondary);
+      font-style: italic;
+      margin-bottom: 1.75rem;
+      line-height: 1.5;
+    }
+
+    .divider { height: 0.5px; background: var(--border); margin: 1.5rem 0; }
+
+    .result-section { margin-bottom: 1.5rem; }
+    .result-section:last-child { margin-bottom: 0; }
+
+    .result-section h3 {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .result-section p { font-size: 15px; line-height: 1.7; }
+    .result-section strong { font-weight: 500; }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .tag {
+      font-size: 12px;
+      padding: 5px 13px;
+      border-radius: 100px;
+      border: 0.5px solid var(--border-hover);
+      color: var(--text-secondary);
+    }
+
+    .cta-box {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-size: 15px;
+      font-style: italic;
+      line-height: 1.65;
+    }
+
+    .error-msg {
+      background: #fcebeb;
+      color: #a32d2d;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+      margin-top: 1rem;
+      line-height: 1.5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .error-msg { background: #3a1c1c; color: #f09595; }
+    }
+
+    footer {
+      margin-top: 2.5rem;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-hint);
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div class="header">
+    <h1>Brand Profile Generator</h1>
+    <p>Answer a few questions — get your personal brand profile</p>
+  </div>
+  <div id="step-bar" class="step-bar"></div>
+  <div id="content"></div>
+</div>
+
+<footer>Powered by Claude · Free to use</footer>
+
+<script>
+const STEPS = [
+  {
+    questions: [
+      { id: 'name',     label: 'Your name',                                           type: 'text',     placeholder: 'e.g. Alex Rivera' },
+      { id: 'role',     label: 'What do you do? (current role or aspiration)',         type: 'text',     placeholder: 'e.g. UX designer, startup founder, freelance writer...' },
+      { id: 'mission',  label: 'What problem do you most want to solve in the world?', type: 'textarea', placeholder: 'Describe in a sentence or two...' }
+    ]
+  },
+  {
+    questions: [
+      { id: 'values',     label: 'Pick your top values (choose as many as fit)',                          type: 'chips',    options: ['Creativity','Integrity','Freedom','Impact','Expertise','Empathy','Innovation','Simplicity','Community','Boldness','Authenticity','Growth'] },
+      { id: 'superpower', label: 'What do people most often thank you for or come to you about?',         type: 'textarea', placeholder: 'e.g. Making complex things simple, rallying people around an idea...' }
+    ]
+  },
+  {
+    questions: [
+      { id: 'tone',          label: 'How would you describe your communication style?', type: 'chips',    options: ['Direct & bold','Warm & nurturing','Analytical & precise','Playful & witty','Visionary & inspiring','Calm & grounded'] },
+      { id: 'audience',      label: 'Who is your ideal audience or client?',            type: 'text',     placeholder: 'e.g. early-stage founders, senior creatives, HR leaders...' },
+      { id: 'differentiator',label: 'What makes you different from others in your space?', type: 'textarea', placeholder: 'Your honest take...' }
+    ]
+  },
+  {
+    questions: [
+      { id: 'aspiration', label: 'Where do you want to be in 5 years?',                             type: 'textarea', placeholder: 'Personal or professional — or both...' },
+      { id: 'legacy',     label: 'What do you want people to say about you after working with you?', type: 'textarea', placeholder: 'In one or two sentences...' }
+    ]
+  }
+];
+
+const state = { step: 0, answers: {}, result: null, loading: false, error: null };
+
+function renderStepBar() {
+  document.getElementById('step-bar').innerHTML = STEPS.map((_, i) => {
+    const cls = i < state.step ? 'done' : i === state.step ? 'active' : '';
+    return `<div class="step-dot ${cls}"></div>`;
+  }).join('');
+}
+
+function getAnswer(id) { return state.answers[id] || ''; }
+
+function renderStep() {
+  renderStepBar();
+  if (state.loading) { renderLoading(); return; }
+  if (state.result)  { renderResult();  return; }
+
+  const step = STEPS[state.step];
+  const el = document.getElementById('content');
+  let html = '';
+
+  step.questions.forEach(q => {
+    html += `<div class="question-block"><label>${q.label}</label>`;
+    if (q.type === 'text') {
+      html += `<input type="text" id="q_${q.id}" placeholder="${q.placeholder}" value="${(getAnswer(q.id)).replace(/"/g,'&quot;')}" />`;
+    } else if (q.type === 'textarea') {
+      html += `<textarea id="q_${q.id}" rows="3" placeholder="${q.placeholder}">${getAnswer(q.id)}</textarea>`;
+    } else if (q.type === 'chips') {
+      html += `<div class="chip-group">` +
+        q.options.map(o => {
+          const sel = (state.answers[q.id] || []).includes(o) ? 'selected' : '';
+          return `<div class="chip ${sel}" data-qid="${q.id}" data-val="${o}">${o}</div>`;
+        }).join('') + `</div>`;
+    }
+    html += `</div>`;
+  });
+
+  const isLast = state.step === STEPS.length - 1;
+  html += `<div class="btn-row">
+    ${state.step > 0 ? `<button class="btn btn-secondary" id="btn-back">← Back</button>` : '<div></div>'}
+    <button class="btn btn-primary" id="btn-next">${isLast ? 'Generate my brand profile →' : 'Continue →'}</button>
+  </div>`;
+
+  if (state.error) html += `<div class="error-msg">${state.error}</div>`;
+
+  el.innerHTML = html;
+
+  step.questions.forEach(q => {
+    if (q.type === 'text') {
+      document.getElementById(`q_${q.id}`).addEventListener('input', e => { state.answers[q.id] = e.target.value; });
+    } else if (q.type === 'textarea') {
+      document.getElementById(`q_${q.id}`).addEventListener('input', e => { state.answers[q.id] = e.target.value; });
+    }
+  });
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const qid = chip.dataset.qid;
+      const val = chip.dataset.val;
+      if (!Array.isArray(state.answers[qid])) state.answers[qid] = [];
+      const idx = state.answers[qid].indexOf(val);
+      if (idx === -1) state.answers[qid].push(val);
+      else state.answers[qid].splice(idx, 1);
+      renderStep();
+    });
+  });
+
+  document.getElementById('btn-next').addEventListener('click', handleNext);
+  const btnBack = document.getElementById('btn-back');
+  if (btnBack) btnBack.addEventListener('click', () => { state.step--; renderStep(); });
+}
+
+function handleNext() {
+  if (state.step < STEPS.length - 1) { state.step++; renderStep(); }
+  else generateProfile();
+}
+
+function renderLoading() {
+  document.getElementById('content').innerHTML = `
+    <div class="generating">
+      <div class="spinner"></div>
+      <p style="font-size:15px;color:var(--text-secondary);">Crafting your brand profile…</p>
+    </div>`;
+}
+
+async function generateProfile() {
+  state.loading = true;
+  state.error = null;
+  renderStepBar();
+  renderLoading();
+
+  const a = state.answers;
+
+  const prompt = `You are a brand strategist and identity expert. Based on the answers below, create a detailed personal brand profile. Respond ONLY with a valid JSON object — no markdown, no backticks, no extra text. Use these exact fields:
+
+{
+  "brandName": "short powerful brand name or positioning title (2–5 words, e.g. 'Alex Rivera — The Clarity Engineer')",
+  "tagline": "memorable one-liner capturing unique value (max 12 words)",
+  "archetype": "the brand archetype they most embody (e.g. The Creator, The Sage, The Hero, The Explorer)",
+  "archetypeReason": "one sentence explaining why this archetype fits them",
+  "coreMessage": "2–3 sentences describing their brand story and what they stand for",
+  "voiceTone": ["adjective1", "adjective2", "adjective3"],
+  "targetAudience": "1–2 sentences describing who they serve and what those people need",
+  "uniqueEdge": "1–2 sentences on what truly differentiates them",
+  "keywords": ["word1","word2","word3","word4","word5","word6","word7","word8"],
+  "callToAction": "one compelling sentence they could use at the top of their website or LinkedIn About section"
+}
+
+Answers:
+Name: ${a.name || 'Not provided'}
+Role: ${a.role || 'Not provided'}
+Mission: ${a.mission || 'Not provided'}
+Core values: ${(a.values || []).join(', ') || 'Not provided'}
+Superpower: ${a.superpower || 'Not provided'}
+Communication tone: ${(a.tone || []).join(', ') || 'Not provided'}
+Target audience: ${a.audience || 'Not provided'}
+Differentiator: ${a.differentiator || 'Not provided'}
+5-year aspiration: ${a.aspiration || 'Not provided'}
+Desired legacy: ${a.legacy || 'Not provided'}`;
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.content.map(b => b.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    state.result = JSON.parse(clean);
+    state.loading = false;
+    state.step = STEPS.length;
+    renderStep();
+  } catch (e) {
+    state.loading = false;
+    state.error = `Something went wrong: ${e.message}. Please try again.`;
+    state.step = STEPS.length - 1;
+    renderStep();
+  }
+}
+
+function renderResult() {
+  renderStepBar();
+  const r = state.result;
+  document.getElementById('content').innerHTML = `
+    <div class="result-card">
+      <div class="result-name">${r.brandName}</div>
+      <div class="result-tagline">"${r.tagline}"</div>
+      <div class="divider"></div>
+      <div class="result-section">
+        <h3>Brand archetype</h3>
+        <p><strong>${r.archetype}</strong> — ${r.archetypeReason}</p>
+      </div>
+      <div class="result-section">
+        <h3>Core brand message</h3>
+        <p>${r.coreMessage}</p>
+      </div>
+      <div class="result-section">
+        <h3>Voice &amp; tone</h3>
+        <div class="tag-row">${(r.voiceTone||[]).map(t=>`<div class="tag">${t}</div>`).join('')}</div>
+      </div>
+      <div class="result-section">
+        <h3>Target audience</h3>
+        <p>${r.targetAudience}</p>
+      </div>
+      <div class="result-section">
+        <h3>Your unique edge</h3>
+        <p>${r.uniqueEdge}</p>
+      </div>
+      <div class="result-section">
+        <h3>Brand keywords</h3>
+        <div class="tag-row">${(r.keywords||[]).map(k=>`<div class="tag">${k}</div>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div class="result-section">
+        <h3>Your call to action</h3>
+        <div class="cta-box">"${r.callToAction}"</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="btn-restart">← Start over</button>
+      <button class="btn btn-primary" id="btn-copy">Copy profile</button>
+    </div>`;
+
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    state.step = 0; state.answers = {}; state.result = null; state.error = null;
+    renderStep();
+  });
+
+  document.getElementById('btn-copy').addEventListener('click', () => {
+    const text = [
+      r.brandName, `"${r.tagline}"`, '',
+      `Archetype: ${r.archetype}`, r.archetypeReason, '',
+      'Core message:', r.coreMessage, '',
+      `Voice & tone: ${(r.voiceTone||[]).join(', ')}`, '',
+      'Target audience:', r.targetAudience, '',
+      'Unique edge:', r.uniqueEdge, '',
+      `Keywords: ${(r.keywords||[]).join(', ')}`, '',
+      'Call to action:', `"${r.callToAction}"`
+    ].join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('btn-copy');
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy profile'; }, 2000); }
+    });
+  });
+}
+
+renderStep();
+</script>
+</body>
+</html>
