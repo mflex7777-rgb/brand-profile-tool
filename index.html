@@ -6,7 +6,7 @@
   <title>Brand Profile Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -258,6 +258,29 @@
 
     footer {
       margin-top: 2.5rem;
+
+    @media print {
+      @page { size: A4 portrait; margin: 10mm; }
+      body { background: #ffffff !important; padding: 0 !important; display: block !important; }
+      #app { max-width: 100% !important; }
+      .header, #step-bar, .btn-row, footer { display: none !important; }
+      .result-card {
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        animation: none !important;
+      }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .result-name { font-size: 22px !important; }
+      .result-tagline { font-size: 13px !important; }
+      .result-section p { font-size: 12px !important; line-height: 1.5 !important; }
+      .result-section h3 { font-size: 9px !important; margin-bottom: 5px !important; }
+      .result-section { margin-bottom: 1rem !important; }
+      .divider { margin: 1rem 0 !important; }
+      .tag { font-size: 11px !important; padding: 3px 10px !important; }
+      .cta-box { font-size: 12px !important; padding: 0.75rem 1rem !important; }
+      .result-card { padding: 0 !important; }
+    }
       text-align: center;
       font-size: 12px;
       color: var(--text-hint);
@@ -505,50 +528,8 @@ function renderResult() {
     renderStep();
   });
 
-  document.getElementById('btn-copy').addEventListener('click', async () => {
-    const btn = document.getElementById('btn-copy');
-    btn.textContent = 'Saving…';
-    btn.disabled = true;
-
-    const card = document.getElementById('result-card-pdf');
-    const name = (r.brandName || 'brand-profile').replace(/[^a-z0-9]/gi, '-').toLowerCase();
-
-    // A4 dimensions in mm and px at 96dpi
-    const mmW = 210, mmH = 297;
-    const pxPerMm = 96 / 25.4;
-    const pageW_px = mmW * pxPerMm;
-    const pageH_px = mmH * pxPerMm;
-
-    // Render card at high scale first to get true pixel height
-    const probeCanvas = await html2pdf().set({
-      margin: 0,
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(card).toCanvas();
-
-    // Work out how much we need to scale down to fill the page
-    const scaleNeeded = pageH_px / probeCanvas.height;
-    // Use the smaller of width-fit or height-fit, cap at 2 for quality
-    const renderScale = Math.min(2, scaleNeeded * (pageW_px / probeCanvas.width) < 1
-      ? 2 * (pageW_px / probeCanvas.width)
-      : 2 * scaleNeeded);
-
-    // Re-render at the right scale
-    const finalCanvas = await html2pdf().set({
-      margin: 0,
-      html2canvas: { scale: Math.max(0.5, renderScale), useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(card).toCanvas();
-
-    const imgData = finalCanvas.toDataURL('image/jpeg', 1.0);
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    // Always draw image to fill exactly one A4 page
-    doc.addImage(imgData, 'JPEG', 0, 0, mmW, mmH);
-    doc.save(`${name}.pdf`);
-
-    btn.textContent = 'Save as PDF';
-    btn.disabled = false;
+  document.getElementById('btn-copy').addEventListener('click', () => {
+    window.print();
   });
 }
 
