@@ -266,7 +266,7 @@
     @media print {
       @page {
         size: A4 portrait;
-        margin: 10mm 12mm;
+        margin: 25.4mm 12mm 10mm 12mm;
       }
 
       * {
@@ -605,46 +605,88 @@ function renderResult() {
   });
 
   document.getElementById('btn-copy').addEventListener('click', () => {
-    // A4 at 96dpi with 10mm top/bottom margins = ~1047px usable height
-    const A4_HEIGHT_PX = 1047;
     const card = document.getElementById('result-card-pdf');
 
-    // Temporarily apply print-sized fonts so measurement is accurate
-    const previewStyle = document.createElement('style');
-    previewStyle.id = 'print-preview-style';
-    previewStyle.textContent = `
-      #result-card-pdf .result-name { font-size: 20px !important; margin-bottom: 3px !important; }
-      #result-card-pdf .result-tagline { font-size: 11.5px !important; margin-bottom: 0 !important; }
-      #result-card-pdf .divider { margin: 0 !important; }
-      #result-card-pdf .result-section { margin-bottom: 0 !important; }
-      #result-card-pdf .result-section h3 { font-size: 8px !important; margin-bottom: 3px !important; }
-      #result-card-pdf .result-section p { font-size: 10.5px !important; line-height: 1.45 !important; }
-      #result-card-pdf .tag { font-size: 9.5px !important; padding: 2px 8px !important; }
-      #result-card-pdf .cta-box { font-size: 10.5px !important; padding: 6px 10px !important; line-height: 1.45 !important; }
-    `;
-    document.head.appendChild(previewStyle);
+    // A4 usable height: 297mm minus 25.4mm (1 inch) top margin minus 10mm bottom = ~249mm at 96dpi = ~941px
+    // A4 usable width: 210mm minus 24mm left/right margins = ~186mm at 96dpi = ~703px
+    const A4_USABLE_H = 941;
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const contentHeight = card.getBoundingClientRect().height;
-        const leftover = Math.max(0, A4_HEIGHT_PX - contentHeight);
+    // Base font sizes (normal screen sizes)
+    const BASE = {
+      name: 26, tagline: 15, h3: 10, p: 15, tag: 12, cta: 15,
+      sectionGap: 24, dividerGap: 24, taglineGap: 28
+    };
+
+    function applySize(scale) {
+      const s = document.createElement('style');
+      s.className = 'size-probe';
+      s.textContent = `
+        #result-card-pdf .result-name { font-size: ${Math.round(BASE.name * scale)}px !important; margin-bottom: 4px !important; }
+        #result-card-pdf .result-tagline { font-size: ${Math.round(BASE.tagline * scale)}px !important; margin-bottom: 0 !important; line-height: 1.4 !important; }
+        #result-card-pdf .divider { margin: 0 !important; }
+        #result-card-pdf .result-section { margin-bottom: 0 !important; }
+        #result-card-pdf .result-section h3 { font-size: ${Math.round(BASE.h3 * scale)}px !important; margin-bottom: 3px !important; }
+        #result-card-pdf .result-section p { font-size: ${Math.round(BASE.p * scale)}px !important; line-height: 1.5 !important; }
+        #result-card-pdf .tag { font-size: ${Math.round(BASE.tag * scale)}px !important; padding: 2px 8px !important; }
+        #result-card-pdf .cta-box { font-size: ${Math.round(BASE.cta * scale)}px !important; padding: 8px 12px !important; line-height: 1.5 !important; }
+      `;
+      document.head.appendChild(s);
+    }
+
+    function removeProbes() {
+      document.querySelectorAll('.size-probe').forEach(s => s.remove());
+    }
+
+    function measureAt(scale) {
+      return new Promise(resolve => {
+        removeProbes();
+        applySize(scale);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          resolve(card.getBoundingClientRect().height);
+        }));
+      });
+    }
+
+    async function findBestScale() {
+      // Binary search between scale 0.65 (small) and 1.15 (large) to find largest that fits
+      let lo = 0.65, hi = 1.15, best = 0.75;
+      for (let i = 0; i < 8; i++) {
+        const mid = (lo + hi) / 2;
+        const h = await measureAt(mid);
+        if (h <= A4_USABLE_H) { best = mid; lo = mid; }
+        else { hi = mid; }
+      }
+      return best;
+    }
+
+    findBestScale().then(scale => {
+      // Measure final content height at best scale
+      measureAt(scale).then(contentHeight => {
+        removeProbes();
+
+        // Distribute leftover space evenly across sections and dividers
+        const leftover = Math.max(0, A4_USABLE_H - contentHeight);
         const gaps = card.querySelectorAll('.result-section, .divider');
         const extraPerGap = leftover / Math.max(gaps.length, 1);
-        const spacing = Math.floor(extraPerGap);
-        const dividerSpacing = Math.floor(spacing * 0.6);
-        const taglineSpacing = Math.floor(spacing * 0.8);
+        const sGap = Math.floor(BASE.sectionGap * scale + extraPerGap);
+        const dGap = Math.floor(BASE.dividerGap * scale + extraPerGap * 0.6);
+        const tGap = Math.floor(BASE.taglineGap * scale + extraPerGap * 0.8);
 
-        // Remove preview styles
-        previewStyle.remove();
-
-        // Inject dynamic print spacing
         const dynStyle = document.createElement('style');
         dynStyle.id = 'dynamic-print-spacing';
         dynStyle.textContent = [
           '@media print {',
-          '  .result-section { margin-bottom: ' + spacing + 'px !important; }',
-          '  .divider { margin: ' + dividerSpacing + 'px 0 !important; }',
-          '  .result-tagline { margin-bottom: ' + taglineSpacing + 'px !important; }',
+          '  @page { size: A4 portrait; margin: 25.4mm 12mm 10mm 12mm; }',
+          '  .result-name { font-size: ' + Math.round(BASE.name * scale) + 'px !important; margin-bottom: 4px !important; color: #1a1a18 !important; }',
+          '  .result-tagline { font-size: ' + Math.round(BASE.tagline * scale) + 'px !important; margin-bottom: ' + tGap + 'px !important; color: #6b6b67 !important; line-height: 1.4 !important; }',
+          '  .divider { margin: ' + dGap + 'px 0 !important; background: #e0e0dc !important; }',
+          '  .result-section { margin-bottom: ' + sGap + 'px !important; }',
+          '  .result-section h3 { font-size: ' + Math.round(BASE.h3 * scale) + 'px !important; margin-bottom: 3px !important; color: #6b6b67 !important; }',
+          '  .result-section p { font-size: ' + Math.round(BASE.p * scale) + 'px !important; line-height: 1.5 !important; color: #1a1a18 !important; }',
+          '  .result-section strong { color: #1a1a18 !important; }',
+          '  .tag-row { gap: 4px !important; }',
+          '  .tag { font-size: ' + Math.round(BASE.tag * scale) + 'px !important; padding: 2px 8px !important; border: 0.5px solid #c0c0bc !important; color: #6b6b67 !important; border-radius: 100px !important; }',
+          '  .cta-box { font-size: ' + Math.round(BASE.cta * scale) + 'px !important; padding: 8px 12px !important; line-height: 1.5 !important; background: #f7f7f5 !important; color: #1a1a18 !important; border-radius: 6px !important; }',
           '}'
         ].join('\n');
         document.head.appendChild(dynStyle);
@@ -652,8 +694,7 @@ function renderResult() {
         setTimeout(() => {
           window.print();
           setTimeout(() => {
-            const s = document.getElementById('dynamic-print-spacing');
-            if (s) s.remove();
+            document.getElementById('dynamic-print-spacing')?.remove();
           }, 2000);
         }, 50);
       });
