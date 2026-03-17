@@ -6,6 +6,7 @@
   <title>Brand Profile Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -460,7 +461,7 @@ function renderResult() {
   renderStepBar();
   const r = state.result;
   document.getElementById('content').innerHTML = `
-    <div class="result-card">
+    <div class="result-card" id="result-card-pdf">
       <div class="result-name">${r.brandName}</div>
       <div class="result-tagline">"${r.tagline}"</div>
       <div class="divider"></div>
@@ -496,7 +497,7 @@ function renderResult() {
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" id="btn-restart">← Start over</button>
-      <button class="btn btn-primary" id="btn-copy">Copy profile</button>
+      <button class="btn btn-primary" id="btn-copy">Save as PDF</button>
     </div>`;
 
   document.getElementById('btn-restart').addEventListener('click', () => {
@@ -505,19 +506,23 @@ function renderResult() {
   });
 
   document.getElementById('btn-copy').addEventListener('click', () => {
-    const text = [
-      r.brandName, `"${r.tagline}"`, '',
-      `Archetype: ${r.archetype}`, r.archetypeReason, '',
-      'Core message:', r.coreMessage, '',
-      `Voice & tone: ${(r.voiceTone||[]).join(', ')}`, '',
-      'Target audience:', r.targetAudience, '',
-      'Unique edge:', r.uniqueEdge, '',
-      `Keywords: ${(r.keywords||[]).join(', ')}`, '',
-      'Call to action:', `"${r.callToAction}"`
-    ].join('\n');
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = document.getElementById('btn-copy');
-      if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy profile'; }, 2000); }
+    const btn = document.getElementById('btn-copy');
+    btn.textContent = 'Saving…';
+    btn.disabled = true;
+
+    const card = document.getElementById('result-card-pdf');
+    const name = (r.brandName || 'brand-profile').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+
+    html2pdf().set({
+      margin: [12, 12, 12, 12],
+      filename: `${name}.pdf`,
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: 'avoid-all' }
+    }).from(card).save().then(() => {
+      btn.textContent = 'Save as PDF';
+      btn.disabled = false;
     });
   });
 }
