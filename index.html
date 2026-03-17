@@ -607,9 +607,9 @@ function renderResult() {
   document.getElementById('btn-copy').addEventListener('click', () => {
     const card = document.getElementById('result-card-pdf');
 
-    // A4 usable height: 297mm minus 25.4mm (1 inch) top margin minus 10mm bottom = ~249mm at 96dpi = ~941px
-    // A4 usable width: 210mm minus 24mm left/right margins = ~186mm at 96dpi = ~703px
-    const A4_USABLE_H = 941;
+    // A4 usable height: 297mm minus 25.4mm top minus 10mm bottom minus 24px safety buffer = ~917px
+    // Using 90% of that for measurement to account for browser print rendering differences
+    const A4_USABLE_H = Math.floor(941 * 0.90);
 
     // Base font sizes (normal screen sizes)
     const BASE = {
@@ -649,7 +649,7 @@ function renderResult() {
 
     async function findBestScale() {
       // Binary search between scale 0.65 (small) and 1.15 (large) to find largest that fits
-      let lo = 0.65, hi = 1.15, best = 0.75;
+      let lo = 0.60, hi = 1.05, best = 0.70;
       for (let i = 0; i < 8; i++) {
         const mid = (lo + hi) / 2;
         const h = await measureAt(mid);
