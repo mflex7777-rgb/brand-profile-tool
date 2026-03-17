@@ -605,7 +605,59 @@ function renderResult() {
   });
 
   document.getElementById('btn-copy').addEventListener('click', () => {
-    window.print();
+    // A4 at 96dpi with 10mm top/bottom margins = ~1047px usable height
+    const A4_HEIGHT_PX = 1047;
+    const card = document.getElementById('result-card-pdf');
+
+    // Temporarily apply print-sized fonts so measurement is accurate
+    const previewStyle = document.createElement('style');
+    previewStyle.id = 'print-preview-style';
+    previewStyle.textContent = `
+      #result-card-pdf .result-name { font-size: 20px !important; margin-bottom: 3px !important; }
+      #result-card-pdf .result-tagline { font-size: 11.5px !important; margin-bottom: 0 !important; }
+      #result-card-pdf .divider { margin: 0 !important; }
+      #result-card-pdf .result-section { margin-bottom: 0 !important; }
+      #result-card-pdf .result-section h3 { font-size: 8px !important; margin-bottom: 3px !important; }
+      #result-card-pdf .result-section p { font-size: 10.5px !important; line-height: 1.45 !important; }
+      #result-card-pdf .tag { font-size: 9.5px !important; padding: 2px 8px !important; }
+      #result-card-pdf .cta-box { font-size: 10.5px !important; padding: 6px 10px !important; line-height: 1.45 !important; }
+    `;
+    document.head.appendChild(previewStyle);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const contentHeight = card.getBoundingClientRect().height;
+        const leftover = Math.max(0, A4_HEIGHT_PX - contentHeight);
+        const gaps = card.querySelectorAll('.result-section, .divider');
+        const extraPerGap = leftover / Math.max(gaps.length, 1);
+        const spacing = Math.floor(extraPerGap);
+        const dividerSpacing = Math.floor(spacing * 0.6);
+        const taglineSpacing = Math.floor(spacing * 0.8);
+
+        // Remove preview styles
+        previewStyle.remove();
+
+        // Inject dynamic print spacing
+        const dynStyle = document.createElement('style');
+        dynStyle.id = 'dynamic-print-spacing';
+        dynStyle.textContent = [
+          '@media print {',
+          '  .result-section { margin-bottom: ' + spacing + 'px !important; }',
+          '  .divider { margin: ' + dividerSpacing + 'px 0 !important; }',
+          '  .result-tagline { margin-bottom: ' + taglineSpacing + 'px !important; }',
+          '}'
+        ].join('\n');
+        document.head.appendChild(dynStyle);
+
+        setTimeout(() => {
+          window.print();
+          setTimeout(() => {
+            const s = document.getElementById('dynamic-print-spacing');
+            if (s) s.remove();
+          }, 2000);
+        }, 50);
+      });
+    });
   });
 }
 
