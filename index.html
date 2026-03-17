@@ -6,7 +6,6 @@
   <title>Brand Profile Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -258,32 +257,109 @@
 
     footer {
       margin-top: 2.5rem;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-hint);
+    }
 
+    /* ── Print styles ── */
     @media print {
-      @page { size: A4 portrait; margin: 10mm; }
-      body { background: #ffffff !important; padding: 0 !important; display: block !important; }
-      #app { max-width: 100% !important; }
-      .header, #step-bar, .btn-row, footer { display: none !important; }
+      @page {
+        size: A4 portrait;
+        margin: 10mm 12mm;
+      }
+
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        display: block !important;
+        font-family: 'DM Sans', sans-serif !important;
+      }
+
+      /* Hide everything except the result card */
+      .header,
+      #step-bar,
+      .btn-row,
+      footer {
+        display: none !important;
+      }
+
+      #app {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+
       .result-card {
         border: none !important;
         border-radius: 0 !important;
         padding: 0 !important;
         animation: none !important;
+        background: #ffffff !important;
       }
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      .result-name { font-size: 22px !important; }
-      .result-tagline { font-size: 13px !important; }
-      .result-section p { font-size: 12px !important; line-height: 1.5 !important; }
-      .result-section h3 { font-size: 9px !important; margin-bottom: 5px !important; }
-      .result-section { margin-bottom: 1rem !important; }
-      .divider { margin: 1rem 0 !important; }
-      .tag { font-size: 11px !important; padding: 3px 10px !important; }
-      .cta-box { font-size: 12px !important; padding: 0.75rem 1rem !important; }
-      .result-card { padding: 0 !important; }
-    }
-      text-align: center;
-      font-size: 12px;
-      color: var(--text-hint);
+
+      /* Tighter sizing to fit one page */
+      .result-name {
+        font-size: 20px !important;
+        margin-bottom: 3px !important;
+        color: #1a1a18 !important;
+      }
+
+      .result-tagline {
+        font-size: 11.5px !important;
+        margin-bottom: 10px !important;
+        color: #6b6b67 !important;
+      }
+
+      .divider {
+        margin: 8px 0 !important;
+        background: #e0e0dc !important;
+      }
+
+      .result-section {
+        margin-bottom: 9px !important;
+      }
+
+      .result-section h3 {
+        font-size: 8px !important;
+        margin-bottom: 3px !important;
+        color: #6b6b67 !important;
+        letter-spacing: 0.1em !important;
+      }
+
+      .result-section p {
+        font-size: 10.5px !important;
+        line-height: 1.45 !important;
+        color: #1a1a18 !important;
+      }
+
+      .result-section strong {
+        color: #1a1a18 !important;
+      }
+
+      .tag-row { gap: 4px !important; }
+
+      .tag {
+        font-size: 9.5px !important;
+        padding: 2px 8px !important;
+        border: 0.5px solid #c0c0bc !important;
+        color: #6b6b67 !important;
+        border-radius: 100px !important;
+      }
+
+      .cta-box {
+        font-size: 10.5px !important;
+        padding: 6px 10px !important;
+        line-height: 1.45 !important;
+        background: #f7f7f5 !important;
+        color: #1a1a18 !important;
+        border-radius: 6px !important;
+      }
     }
   </style>
 </head>
